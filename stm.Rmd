@@ -1,0 +1,48 @@
+---
+title: "stm"
+output: html_document
+date: "2024-01-09"
+---
+
+```{r}
+library(lda)
+library(slam)
+library(stm)
+```
+
+
+```{r}
+df <- read.csv('data/ARCOM.csv')
+```
+
+```{r}
+df
+```
+
+```{r}
+df$bigrams <- lapply(df$clean_bigram_total, function(x) strsplit(x, split = " "))
+```
+```{r}
+metadata = 
+```
+
+
+```{r}
+proc = textProcessor(documents=df$mots_clefs_themes_str,
+                      metadata = poliblog5k.meta,
+                      lowercase = TRUE, 
+                      removestopwords = FALSE, 
+                      removenumbers = FALSE, 
+                      removepunctuation = FALSE, 
+                      stem = FALSE, 
+                      wordLengths = c(3,Inf), 
+                      sparselevel = 1, 
+                      language = "en", 
+                      verbose = TRUE, 
+                      onlycharacter = TRUE, 
+                      striphtml = FALSE, 
+                      customstopwords = NULL, 
+                      v1 = FALSE) 
+```
+
+
