@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<script type="module">
+
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+
+const width = 600;
+const height = 800;
+const raw_data = await d3.json("11b_zeroshot_food_cognitivethemes.json");
+
+const indices_to_plot = [1];
+for (let i of indices_to_plot){
+  const paragraph = document.createElement("p");
+  paragraph.textContent = raw_data[i]['sequence'];
+  document.body.appendChild(paragraph);
+}
+
+let data_to_plot = [];
+let features = raw_data[0]['labels'];
+for (let arcom_i of indices_to_plot) {
+  let data = {};
+  for (let label_i=0;  label_i<features.length; label_i += 1){
+    data[raw_data[arcom_i]['labels'][label_i]] = raw_data[arcom_i]['scores'][label_i]*10;
+  }
+  data_to_plot.push(data);
+}
+console.log(data_to_plot);
+
+var svg = d3.select('body').append('svg')
+  .attr('width', width * 12 / 10)
+  .attr('height', height * 12 / 10);
+
+let radialScale = d3.scaleLinear()
+    .domain([0, 10])
+    .range([0, 250]);
+let ticks = [
+  {value:2, label: '20%'}, 
+  {value:4, label: '40%'}, 
+  {value:6, label: '60%'}, 
+  {value:8, label: '80%'}, 
+  {value: 10, label: '100%'}];
+
+svg.selectAll("circle")
+    .data(ticks)
+    .join(
+        enter => enter.append("circle")
+            .attr("cx", width / 2)
+            .attr("cy", height / 2)
+            .attr("fill", "none")
+            .attr("stroke", "gray")
+            .attr("r", d => radialScale(d.value))
+    );
+
+svg.selectAll(".ticklabel")
+.data(ticks)
+.join(
+    enter => enter.append("text")
+        .attr("class", "ticklabel")
+        .attr("x", width / 2 + 5)
+        .attr("y", d => height / 2 - radialScale(d.value))
+        .text(d => d.label)
+);
+
+function angleToCoordinate(angle, value){
+    let x = Math.cos(angle) * radialScale(value);
+    let y = Math.sin(angle) * radialScale(value);
+    return {"x": width / 2 + x, "y": height / 2 - y};
+}
+
+let featureData = features.map((f, i) => {
+    let angle = (Math.PI / 2) + (2 * Math.PI * i / features.length);
+    return {
+        "name": f,
+        "angle": angle,
+        "line_coord": angleToCoordinate(angle, 10),
+        "label_coord": angleToCoordinate(angle, 10.5)
+    };
+});
+
+// draw axis line
+svg.selectAll("line")
+    .data(featureData)
+    .join(
+        enter => enter.append("line")
+            .attr("x1", width / 2)
+            .attr("y1", height / 2)
+            .attr("x2", d => d.line_coord.x)
+            .attr("y2", d => d.line_coord.y)
+            .attr("stroke","black")
+    );
+
+// draw axis label
+svg.selectAll(".axislabel")
+    .data(featureData)
+    .join(
+        enter => enter.append("text")
+            .attr("x", d => d.label_coord.x)
+            .attr("y", d => d.label_coord.y)
+            .text(d => d.name)
+    );
+
+let line = d3.line()
+    .x(d => d.x)
+    .y(d => d.y);
+let colors = ["darkorange", "gray", "navy"];
+
+function getPathCoordinates(data_point){
+    let coordinates = [];
+    for (var i = 0; i < features.length; i++){
+        let ft_name = features[i];
+        let angle = (Math.PI / 2) + (2 * Math.PI * i / features.length);
+        coordinates.push(angleToCoordinate(angle, data_point[ft_name]));
+    }
+    return coordinates;
+}
+
+svg.selectAll("path")
+    .data(data_to_plot)
+    .join(
+        enter => enter.append("path")
+            .datum(d => getPathCoordinates(d))
+            .attr("d", line)
+            .attr("stroke-width", 3)
+            .attr("stroke", (_, i) => colors[i])
+            .attr("fill", (_, i) => colors[i])
+            .attr("stroke-opacity", 1)
+            .attr("opacity", 0.5)
+    );
+
+</script>
